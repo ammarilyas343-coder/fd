@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Startup Wars — Manager Console</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --amber:#F7B32B; --amber-hi:#FFD166; --ink:#08090D;
+    --panel:rgba(255,255,255,.028); --line:rgba(255,255,255,.07);
+    --green:#34D399; --red:#FB7185; --sky:#38BDF8;
+  }
+  html{scrollbar-color:rgba(255,255,255,.14) transparent}
+  body{background:var(--ink);font-family:'Inter',sans-serif}
+  .font-display{font-family:'Space Grotesk',sans-serif}
+  .num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:99px;border:2px solid var(--ink)}
+  ::-webkit-scrollbar-track{background:transparent}
+  *::selection{background:rgba(247,179,43,.28);color:#fff}
+
+  .bg-stage{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 480px at 12% -8%, rgba(247,179,43,.075), transparent 60%),
+      radial-gradient(800px 520px at 95% 105%, rgba(56,189,248,.055), transparent 60%),
+      radial-gradient(600px 400px at 70% -10%, rgba(167,139,250,.05), transparent 60%);
+  }
+  .bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background-image:radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size:26px 26px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 20%, black 30%, transparent 100%);
+            mask-image:radial-gradient(ellipse 90% 70% at 50% 20%, black 30%, transparent 100%);
+  }
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(8px)}
+  .panel-hd{border-bottom:1px solid var(--line)}
+
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;color:#8b93a3;font-weight:500;font-size:13.5px;letter-spacing:.01em;cursor:pointer;transition:all .2s cubic-bezier(.22,1,.36,1);border:1px solid transparent;white-space:nowrap}
+  .nav-item:hover{color:#e6e9f0;background:rgba(255,255,255,.04)}
+  .nav-item.active{color:var(--amber);background:rgba(247,179,43,.09);border-color:rgba(247,179,43,.22)}
+
+  .btn-amber{background:linear-gradient(135deg,var(--amber-hi),var(--amber));color:#1a1206;font-weight:600;border-radius:12px;transition:all .18s;box-shadow:0 6px 24px -8px rgba(247,179,43,.5)}
+  .btn-amber:hover{transform:translateY(-1px);box-shadow:0 10px 30px -8px rgba(247,179,43,.6)}
+  .btn-amber:active{transform:translateY(0)}
+  .btn-amber:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-ghost{border:1px solid var(--line);color:#aab2c0;border-radius:12px;transition:all .18s;font-weight:500}
+  .btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04)}
+  .btn-danger{border:1px solid rgba(251,113,133,.3);color:#FDA4AF;border-radius:12px;transition:all .18s;font-weight:500}
+  .btn-danger:hover{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.55)}
+
+  .inp{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;color:#eef1f6;font-size:13px;padding:8px 10px;outline:none;transition:all .15s}
+  .inp:focus{border-color:rgba(247,179,43,.55);box-shadow:0 0 0 3px rgba(247,179,43,.12);background:rgba(247,179,43,.05)}
+  .inp.invalid{border-color:rgba(251,113,133,.7)!important;box-shadow:0 0 0 3px rgba(251,113,133,.14)!important}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
+  table.tbl{width:100%;border-collapse:collapse}
+  .tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:#6b7383;font-weight:600;padding:10px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  .tbl th:first-child{text-align:left}
+  .tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.045);font-size:13px;text-align:right;white-space:nowrap}
+  .tbl td:first-child{text-align:left}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tbody tr{transition:background .15s}
+  .tbl tbody tr:hover{background:rgba(255,255,255,.025)}
+
+  .ev-card{cursor:pointer;transition:all .22s cubic-bezier(.22,1,.36,1);position:relative}
+  .ev-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.16)}
+  .ev-card.selected{border-color:rgba(247,179,43,.6);background:rgba(247,179,43,.06);box-shadow:0 0 0 1px rgba(247,179,43,.4),0 14px 40px -18px rgba(247,179,43,.35)}
+  .ev-card.flash{border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.07)}
+  .ev-card.selected .ev-check{opacity:1;transform:scale(1)}
+  .ev-check{opacity:0;transform:scale(.5);transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both}
+  @keyframes toastIn{from{opacity:0;transform:translateX(24px) scale(.96)}to{opacity:1;transform:translateX(0) scale(1)}}
+  .toast{animation:toastIn .35s cubic-bezier(.22,1,.36,1) both}
+  @keyframes pulseAmber{0%,100%{box-shadow:0 0 0 0 rgba(247,179,43,.35)}50%{box-shadow:0 0 0 7px rgba(247,179,43,0)}}
+  .pulse-dot{animation:pulseAmber 2.2s infinite}
+
+  .bar-track{height:6px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
+  .bar-fill{height:100%;border-radius:99px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+
+  .pod-1{background:linear-gradient(180deg,rgba(247,179,43,.12),rgba(247,179,43,.03));border-color:rgba(247,179,43,.35)}
+  .pod-2{background:linear-gradient(180deg,rgba(226,232,240,.08),rgba(226,232,240,.02));border-color:rgba(226,232,240,.22)}
+  .pod-3{background:linear-gradient(180deg,rgba(217,119,6,.09),rgba(217,119,6,.02));border-color:rgba(217,119,6,.28)}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;letter-spacing:.02em}
+  .ta-c{text-align:center!important}
+  .ta-r{text-align:right!important}
+  .inp-sm{padding:6px 10px!important}
+  .b-price{border-color:rgba(247,179,43,.25)!important}
+  .b-danger{border-color:rgba(251,113,133,.22)!important}
+
+  @media print{
+    .bg-stage,.bg-grid,aside,#topbar,.no-print,#toasts{display:none!important}
+    body,html{background:#fff!important}
+    main,#view{overflow:visible!important}
+    .panel{background:#fff!important;border-color:#ddd!important;backdrop-filter:none}
+    *{color:#111!important;text-shadow:none!important;box-shadow:none!important}
+    .tbl th{color:#555!important;border-color:#ddd!important}
+    .tbl td{border-color:#eee!important}
+    body.print-sheet #view .guide-section{display:none!important}
+    body.print-sheet #view .sheet-section{display:block!important;margin:0!important}
+  }
+</style>
+</head>
+<body class="text-zinc-200 antialiased">
+<div class="bg-stage"></div>
+<div class="bg-grid"></div>
+
+<div id="app" class="relative z-10 flex h-screen overflow-hidden">
+  <!-- SIDEBAR -->
+  <aside class="w-[68px] lg:w-[236px] shrink-0 flex flex-col border-r border-white/7 bg-black/30 backdrop-blur-md">
+    <div class="flex items-center gap-3 px-4 lg:px-5 py-5 border-b border-white/7">
+      <div class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center shadow-[0_8px_24px_-6px_rgba(247,179,43,.5)]">
+        <i data-lucide="swords" class="w-5 h-5 text-[#241703]"></i>
+      </div>
+      <div class="hidden lg:block leading-tight">
+        <div class="font-display font-bold text-[15px] tracking-tight text-white">STARTUP WARS</div>
+        <div class="text-[10px] uppercase tracking-[.18em] text-zinc-500">Manager Console</div>
+      </div>
+    </div>
+    <nav id="nav" class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto"></nav>
+    <div class="px-4 lg:px-5 py-4 border-t border-white/7">
+      <div class="hidden lg:flex items-center gap-2 text-[11px] text-zinc-500">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+        Saved locally · No logins
+      </div>
+      <div class="hidden lg:block text-[10px] text-zinc-600 mt-1.5 leading-relaxed">Participants play on paper.<br>This tool is for the event manager only.</div>
+      <div class="lg:hidden flex justify-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col min-w-0">
+    <header id="topbar" class="shrink-0 flex items-center justify-between gap-4 px-5 lg:px-8 py-4 border-b border-white/7 bg-black/20 backdrop-blur-md"></header>
+    <div id="view" class="flex-1 overflow-y-auto px-5 lg:px-8 py-6"></div>
+  </main>
+</div>
+
+<div id="toasts" class="fixed top-5 right-5 z-[90] space-y-2.5 w-[320px]"></div>
+<div id="modal-root"></div>
+
+<script>
+/* ============================================================
+   STARTUP WARS — MANAGER CONSOLE
+   Paper-first event. This console handles data entry + math only.
+   ============================================================ */
+
+// ---------------- Icon helper ----------------
+function icons(){ try{ if(window.lucide) lucide.createIcons(); }catch(e){} }
+
+// ---------------- Formatting ----------------
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtMoney = n => (n<-0.5?'-$':'$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+const fmtNum = n => Math.round(n).toLocaleString('en-US');
+const fmtPct = n => (n*100).toFixed(1)+'%';
+const fmtDelta = n => (n>=0?'+$':'-$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const plCls = n => n>=0 ? 'text-emerald-400' : 'text-rose-400';
+
+// ---------------- Static data ----------------
+const EVENTS = [
+  { id:'stable',    name:'Steady Market',       icon:'equal',        kind:'neutral', tag:'No modifiers',   desc:'Business as usual. Base demand, standard costs for everyone.',          mods:{demand:1,   cost:1,   mkt:1,   rd:1, grant:0} },
+  { id:'boom',      name:'Economic Boom',        icon:'trending-up',  kind:'good',    tag:'Demand +20%',   desc:'Consumer confidence surges. Total market demand rises by 20%.',          mods:{demand:1.2, cost:1,   mkt:1,   rd:1, grant:0} },
+  { id:'recession', name:'Recession Fears',      icon:'trending-down',kind:'bad',     tag:'Demand −15%',   desc:'Customers tighten their wallets. Total market demand drops 15%.',        mods:{demand:0.85,cost:1,   mkt:1,   rd:1, grant:0} },
+  { id:'supply',    name:'Supply Chain Shock',   icon:'truck',        kind:'bad',     tag:'Unit cost +18%',desc:'Logistics gridlock pushes production costs up for every team.',          mods:{demand:1,   cost:1.18,mkt:1,   rd:1, grant:0} },
+  { id:'viral',     name:'Viral Trend',          icon:'megaphone',    kind:'good',    tag:'Ads ×1.5 pull', desc:'A social media wave amplifies every marketing dollar spent this round.', mods:{demand:1,   cost:1,   mkt:1.5, rd:1, grant:0} },
+  { id:'breakthrough',name:'R&D Breakthrough',   icon:'lightbulb',    kind:'good',    tag:'R&D ×2 effect', desc:'Open research findings double the impact of all R&D investment.',        mods:{demand:1,   cost:1,   mkt:1,   rd:2, grant:0} },
+  { id:'glut',      name:'Material Surplus',     icon:'boxes',        kind:'good',    tag:'Unit cost −12%',desc:'A raw-material glut slashes production costs by 12% this round.',        mods:{demand:1,   cost:0.88,mkt:1,   rd:1, grant:0} },
+  { id:'subsidy',   name:'Govt. Subsidy',        icon:'landmark',     kind:'good',    tag:'+$8,000 grant', desc:'Innovation grant: every team receives a one-time $8,000 injection.',     mods:{demand:1,   cost:1,   mkt:1,   rd:1, grant:8000} },
+  { id:'competitor',name:'Global Rival Enters',  icon:'earth',        kind:'bad',     tag:'Demand −10%',   desc:'An overseas giant launches and steals attention. Demand falls 10%.',     mods:{demand:0.9, cost:1,   mkt:1,   rd:1, grant:0} },
+];
+const evById = id => EVENTS.find(e=>e.id===id) || EVENTS[0];
+
+const PALETTE = ['#F7B32B','#38BDF8','#A78BFA','#FB7185','#34D399','#F472B6','#FB923C','#22D3EE','#BEF264','#F87171','#818CF8','#FACC15'];
+
+const DEFAULTS = {
+  config:{ startingCash:60000, baseUnitCost:42, fixedOverhead:2500, demandPerTeam:250, growth:0.07 },
+  decision:{ price:100, units:250, mkt:3000, rd:1500 },
+};
+const MAX_ROUNDS = 20;
+
+// ---------------- State ----------------
+let state = null;
+const LS_KEY = 'startup-wars-v1';
+
+function freshStats(cfg){ return { cash:cfg.startingCash, quality:0, reputation:1, cumProfit:0 }; }
+function newTeam(name, colorIdx, cfg){
+  return { id:'t'+Math.random().toString(36).slice(2,9), name, color:PALETTE[colorIdx%PALETTE.length],
+           stats:freshStats(cfg), history:{ cash:[], profit:[], share:[] } };
+}
+
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(!s || s.version!==1 || !Array.isArray(s.teams)) return null;
+    return s;
+  }catch(e){ return null; }
+}
+
+function seedSample(){
+  const cfg = JSON.parse(JSON.stringify(DEFAULTS.config));
+  const s = {
+    version:1, config:cfg, rounds:[],
+    ui:{ view:'dashboard', selectedEvent:'stable' },
+    teams:[
+      newTeam('Nova Ventures',0,cfg), newTeam('ByteForge Labs',1,cfg), newTeam('Quantum Hive',2,cfg),
+      newTeam('Ember & Oak',3,cfg),   newTeam('Atlas Motion',4,cfg),   newTeam('Zenith Republic',5,cfg),
+    ]
+  };
+  const T = s.teams.map(t=>t.id);
+  const E = {};
+  const mk = (price,units,mkt,rd)=>({price,units,mkt,rd});
+  E[1] = {}; E[1][T[0]]=mk(100,250,3000,2000); E[1][T[1]]=mk(118,230,5000,4500); E[1][T[2]]=mk(95,280,2500,1000);
+  E[1][T[3]]=mk(108,240,4000,2500); E[1][T[4]]=mk(90,300,1500,0); E[1][T[5]]=mk(112,220,6000,3500);
+  E[2] = {}; E[2][T[0]]=mk(105,270,4000,2000); E[2][T[1]]=mk(120,250,6000,5000); E[2][T[2]]=mk(98,320,3000,1500);
+  E[2][T[3]]=mk(110,260,4500,3000); E[2][T[4]]=mk(92,340,2000,0); E[2][T[5]]=mk(115,240,7000,4000);
+  state = s;
+  processRound(E[1],'stable');
+  processRound(E[2],'boom');
+  save();
+}
+
+// ---------------- Simulation engine ----------------
+function marketSize(roundNum, ev, cfg, teamCount){
+  return Math.round(teamCount * cfg.demandPerTeam * Math.pow(1+cfg.growth, roundNum-1) * ev.mods.demand);
+}
+
+function processRound(entries, eventId){
+  const cfg = state.config, ev = evById(eventId);
+  const teams = state.teams.filter(t=>entries[t.id]);
+  if(teams.length===0) return null;
+  const roundNum = state.rounds.length + 1;
+  const mkt = marketSize(roundNum, ev, cfg, teams.length);
+  const avgPrice = teams.reduce((a,t)=>a+entries[t.id].price,0)/teams.length;
+
+  // Appeal scores
+  let sumAppeal = 0; const appeal = {};
+  teams.forEach(t=>{
+    const e = entries[t.id], st = t.stats;
+    const priceFactor = Math.pow(avgPrice/e.price, 1.5);
+    const mktFactor   = 1 + (e.mkt/3500) * ev.mods.mkt;
+    const qualFactor  = 1 + st.quality/50;
+    const a = Math.max(0.05, priceFactor * mktFactor * qualFactor * st.reputation);
+    appeal[t.id]=a; sumAppeal+=a;
+  });
+
+  const results = {};
+  let totalSold=0, totalRevenue=0, totalCosts=0, totalProfit=0;
+  teams.forEach(t=>{
+    const e = entries[t.id], st = t.stats;
+    const demand   = mkt * appeal[t.id]/sumAppeal;
+    const sold     = Math.min(demand, e.units);
+    const revenue  = sold * e.price;
+    const techCut  = Math.min(st.quality*0.0035, 0.20);
+    const unitCost = cfg.baseUnitCost * ev.mods.cost * (1 - techCut);
+    const cogs     = e.units * unitCost;                       // pay for everything produced
+    const costs    = cogs + e.mkt + e.rd + cfg.fixedOverhead;
+    const profit   = revenue - costs + ev.mods.grant;
+    const fulfill  = demand>0 ? sold/demand : 1;
+    const newQual  = st.quality + (e.rd/1500)*ev.mods.rd;
+    const newRep   = clamp(st.reputation + (fulfill-0.8)*0.2, 0.6, 1.35);
+
+    results[t.id] = {
+      name:t.name, color:t.color,
+      price:e.price, units:e.units, mkt:e.mkt, rd:e.rd,
+      demand, sold, unmet:Math.max(0,demand-sold), revenue, unitCost, cogs,
+      overhead:cfg.fixedOverhead, costs, grant:ev.mods.grant, profit,
+      cash:st.cash+profit, qualityGain:newQual-st.quality, reputation:newRep, fulfill, share:0
+    };
+  });
+  teams.forEach(t=>{ totalSold+=results[t.id].sold; totalRevenue+=results[t.id].revenue; totalCosts+=results[t.id].costs; totalProfit+=results[t.id].profit; });
+  teams.forEach(t=>{ results[t.id].share = totalSold>0 ? results[t.id].sold/totalSold : 0; });
+
+  // apply mutation
+  teams.forEach(t=>{
+    const r = results[t.id];
+    t.stats.cash = r.cash; t.stats.cumProfit += r.profit;
+    t.stats.quality += r.qualityGain; t.stats.reputation = r.reputation;
+    t.history.cash.push(r.cash); t.history.profit.push(r.profit); t.history.share.push(r.share);
+  });
+
+  // ranks
+  const sorted = [...state.teams].sort((a,b)=>b.stats.cash-a.stats.cash);
+  const rankMap = {}; sorted.forEach((t,i)=>rankMap[t.id]=i+1);
+
+  const round = { n:roundNum, eventId, marketSize:mkt, avgPrice, entries:JSON.parse(JSON.stringify(entries)),
+                  results, rankMap, totalSold, totalRevenue, totalCosts, totalProfit, ts:Date.now() };
+  state.rounds.push(round);
+  save();
+  return round;
+}
+
+// ---------------- Ranking helpers ----------------
+function rankedTeams(){
+  return [...state.teams].sort((a,b)=> b.stats.cash - a.stats.cash || b.stats.cumProfit - a.stats.cumProfit);
+}
+function lastRankMap(){
+  if(state.rounds.length<2) return null;
+  return state.rounds[state.rounds.length-2].rankMap;
+}
+
+// ---------------- SVG sparkline ----------------
+function spark(values, w, h, color){
+  if(!values || values.length===0) return '<span class="text-zinc-600 text-[11px]">—</span>';
+  const min=Math.min(...values), max=Math.max(...values), rng=(max-min)||1;
+  const pts = values.map((v,i)=>{
+    const x = values.length===1 ? w/2 : (i/(values.length-1))*(w-4)+2;
+    const y = h-3-((v-min)/rng)*(h-6);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  const last = pts.split(' ').pop().split(',');
+  return `<svg width="${w}" height="${h}" class="inline-block align-middle"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.4" fill="${color}"/></svg>`;
+}
+
+// ---------------- Toasts ----------------
+function toast(msg, type='ok'){
+  const wrap = document.getElementById('toasts');
+  const div = document.createElement('div');
+  const icon = type==='ok'?'circle-check-big':type==='warn'?'triangle-alert':'info';
+  const bar  = type==='ok'?'bg-emerald-400':type==='warn'?'bg-amber-400':'bg-sky-400';
+  div.className = 'toast panel flex items-start gap-3 p-3.5 pr-4 shadow-2xl';
+  div.innerHTML = `<span class="w-1 self-stretch rounded-full ${bar} shrink-0"></span>
+    <i data-lucide="${icon}" class="w-4 h-4 mt-0.5 text-zinc-300 shrink-0"></i>
+    <div class="text-[12.5px] text-zinc-200 leading-snug">${msg}</div>`;
+  wrap.appendChild(div); icons();
+  setTimeout(()=>{ div.style.transition='all .4s'; div.style.opacity='0'; div.style.transform='translateX(20px)'; setTimeout(()=>div.remove(),400); }, 3400);
+}
+
+// ---------------- Modal ----------------
+function openModal(html, wide){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="fixed inset-0 z-[80] flex items-center justify-center p-4" id="modal-back">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+      <div class="relative panel w-full ${wide?'max-w-2xl':'max-w-md'} max-h-[85vh] overflow-y-auto fade-up shadow-2xl">
+        ${html}
+      </div>
+    </div>`;
+  document.getElementById('modal-back').addEventListener('click', e=>{ if(e.target.id==='modal-back') closeModal(); });
+  icons();
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+function confirmModal(title, msg, okLabel, onOk, danger){
+  openModal(`
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-9 h-9 rounded-xl ${danger?'bg-rose-500/10 text-rose-400':'bg-amber-400/10 text-amber-300'} flex items-center justify-center">
+          <i data-lucide="${danger?'triangle-alert':'circle-help'}" class="w-4.5 h-4.5"></i>
+        </div>
+        <h3 class="font-display font-semibold text-white text-[16px]">${title}</h3>
+      </div>
+      <p class="text-[13px] text-zinc-400 leading-relaxed mb-5">${msg}</p>
+      <div class="flex justify-end gap-2">
+        <button class="btn-ghost px-4 py-2 text-[12.5px]" onclick="closeModal()">Cancel</button>
+        <button id="modal-ok" class="${danger?'btn-danger':'btn-amber'} px-4 py-2 text-[12.5px]">${okLabel}</button>
+      </div>
+    </div>`);
+  document.getElementById('modal-ok').onclick = ()=>{ closeModal(); onOk(); };
+}
+
+// ---------------- Rules modal ----------------
+function showRules(){
+  const cfg = state.config;
+  openModal(`
+  <div class="p-6 lg:p-8">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-300 flex items-center justify-center"><i data-lucide="scroll-text" class="w-5 h-5"></i></div>
+      <div>
+        <h3 class="font-display font-semibold text-white text-[17px]">How the simulation scores a round</h3>
+        <p class="text-[11.5px] text-zinc-500">Explain these rules verbally — participants play on paper.</p>
+      </div>
+    </div>
+    <div class="space-y-4 text-[13px] text-zinc-300 leading-relaxed">
+      <div class="panel p-4">
+        <div class="chip bg-amber-400/10 text-amber-300 mb-2">STEP 1 · MARKET SIZE</div>
+        <p>Total customers = <span class="num text-white">${fmtNum(cfg.demandPerTeam)}</span> × number of teams, growing <span class="num text-white">${(cfg.growth*100).toFixed(0)}%</span> each round, then adjusted by the event card in play.</p>
+      </div>
+      <div class="panel p-4">
+        <div class="chip bg-amber-400/10 text-amber-300 mb-2">STEP 2 · DEMAND ALLOCATION</div>
+        <p>Customers are split between teams by <b class="text-white">appeal</b>: lower prices (vs. the round average), higher marketing spend, accumulated R&amp;D quality, and reputation all win more customers.</p>
+      </div>
+      <div class="panel p-4">
+        <div class="chip bg-amber-400/10 text-amber-300 mb-2">STEP 3 · SALES &amp; COSTS</div>
+        <p>Units sold = the lower of demand and production. Revenue = units sold × price. Teams pay for <b class="text-white">every unit produced</b> (unit cost ${fmtMoney(cfg.baseUnitCost)}), plus marketing, R&amp;D and ${fmtMoney(cfg.fixedOverhead)} overhead. Unsold stock is written off.</p>
+      </div>
+      <div class="panel p-4">
+        <div class="chip bg-amber-400/10 text-amber-300 mb-2">STEP 4 · STANDINGS</div>
+        <p>Profit = revenue − costs (+ grants). Cash carries forward round to round. R&amp;D raises future appeal and trims unit costs; failing to meet demand slightly hurts reputation. Leaderboard ranks by cash on hand.</p>
+      </div>
+    </div>
+    <div class="flex justify-end mt-5"><button class="btn-ghost px-4 py-2 text-[12.5px]" onclick="closeModal()">Close</button></div>
+  </div>`, true);
+}
+
+// ============================================================
+//  ROUTER
+// ============================================================
+const VIEWS = {
+  dashboard:   { label:'Overview',       icon:'layout-dashboard', sub:'Event control at a glance' },
+  decisions:   { label:'Decision Entry', icon:'clipboard-list',   sub:'Type in paper decision sheets + draw an event card' },
+  results:     { label:'Round Results',  icon:'chart-column',     sub:'Round-wise performance breakdown' },
+  leaderboard: { label:'Leaderboard',    icon:'trophy',           sub:'Live standings across all rounds' },
+  guide:       { label:'Event Guide',    icon:'book-open',        sub:'How to run and play Startup Wars on paper' },
+  teams:       { label:'Teams & Setup',  icon:'users',            sub:'Manage teams, economics and event data' },
+};
+
+function go(view){ state.ui.view = view; save(); render(); }
+
+function render(){
+  renderNav(); renderTopbar();
+  const v = state.ui.view;
+  const el = document.getElementById('view');
+  el.scrollTop = 0;
+  if(v==='dashboard') vDashboard(el);
+  else if(v==='decisions') vDecisions(el);
+  else if(v==='results') vResults(el);
+  else if(v==='leaderboard') vLeaderboard(el);
+  else if(v==='guide') vGuide(el);
+  else vTeams(el);
+  icons();
+}
+
+function renderNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = Object.entries(VIEWS).map(([k,v])=>`
+    <div class="nav-item ${state.ui.view===k?'active':''}" onclick="go('${k}')" title="${esc(v.label)}">
+      <i data-lucide="${v.icon}" class="w-[17px] h-[17px] shrink-0"></i>
+      <span class="hidden lg:inline">${v.label}</span>
+      ${k==='decisions' && state.rounds.length<MAX_ROUNDS ? '<span class="hidden lg:inline ml-auto text-[10px] num text-amber-300/80 bg-amber-400/10 rounded-full px-1.5 py-0.5">R'+(state.rounds.length+1)+'</span>':''}
+    </div>`).join('');
+}
+
+function renderTopbar(){
+  const v = VIEWS[state.ui.view];
+  const round = state.rounds.length;
+  document.getElementById('topbar').innerHTML = `
+    <div class="min-w-0">
+      <h1 class="font-display font-semibold text-white text-[18px] tracking-tight truncate">${v.label}</h1>
+      <p class="text-[11.5px] text-zinc-500 truncate">${v.sub}</p>
+    </div>
+    <div class="flex items-center gap-2.5 shrink-0">
+      <div class="hidden sm:flex items-center gap-2 panel px-3.5 py-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 pulse-dot"></span>
+        <span class="text-[11px] uppercase tracking-[.16em] text-zinc-400">Round</span>
+        <span class="num font-bold text-white text-[13px]">${round===0?'—':round}<span class="text-zinc-600"> / next ${round+1>MAX_ROUNDS?'·':round+1}</span></span>
+      </div>
+      <div id="topbar-actions" class="flex items-center gap-2"></div>
+      <button class="btn-ghost px-3.5 py-2 text-[12.5px] flex items-center gap-2" onclick="showRules()" title="Simulation rules"><i data-lucide="scroll-text" class="w-4 h-4"></i><span class="hidden md:inline">Rules</span></button>
+    </div>`;
+  icons();
+}
+
+function setActions(html){ const el=document.getElementById('topbar-actions'); if(el){ el.innerHTML = html; icons(); } }
+
+// ============================================================
+//  VIEW: DASHBOARD
+// ============================================================
+function animateNum(id, target, formatter, dur=900){
+  const el = document.getElementById(id); if(!el) return;
+  const t0 = performance.now();
+  function tick(t){
+    const p = clamp((t-t0)/dur,0,1), e = 1-Math.pow(1-p,3);
+    el.textContent = formatter(target*e);
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function vDashboard(el){
+  const rounds = state.rounds, n = rounds.length;
+  const cfg = state.config;
+  const nextMkt = n<MAX_ROUNDS ? marketSize(n+1, evById('stable'), cfg, state.teams.length) : 0;
+  const last = n? rounds[n-1] : null;
+  const top = rankedTeams();
+
+  const kpis = [
+    { id:'k-round', label:'Rounds completed', val:n, fmt:v=>fmtNum(Math.round(v)), icon:'flag', cls:'text-amber-300 bg-amber-400/10' },
+    { id:'k-teams', label:'Teams competing', val:state.teams.length, fmt:v=>fmtNum(Math.round(v)), icon:'users', cls:'text-sky-300 bg-sky-400/10' },
+    { id:'k-mkt', label:'Next market size (base)', val:nextMkt, fmt:v=>fmtNum(v), icon:'radar', cls:'text-violet-300 bg-violet-400/10' },
+    { id:'k-rev', label:last?('Round '+n+' total revenue'):'Total revenue', val:last?last.totalRevenue:0, fmt:v=>fmtMoney(v), icon:'banknote', cls:'text-emerald-300 bg-emerald-400/10' },
+  ];
+
+  let latestHtml = '';
+  if(last){
+    const rows = Object.entries(last.results).sort((a,b)=>b[1].profit-a[1].profit).map(([tid,r],i)=>`
+      <tr>
+        <td><div class="flex items-center gap-2.5">
+          <span class="num text-[11px] text-zinc-500 w-4">${i+1}</span>
+          <span class="w-2 h-2 rounded-full shrink-0" style="background:${r.color}"></span>
+          <span class="text-zinc-100 font-medium">${esc(r.name)}</span></div></td>
+        <td class="num">${fmtNum(r.sold)} / ${fmtNum(r.demand)}</td>
+        <td class="num">${fmtMoney(r.revenue)}</td>
+        <td class="num ${plCls(r.profit)}">${fmtDelta(r.profit)}</td>
+        <td><div class="flex items-center justify-end gap-2"><div class="bar-track w-16"><div class="bar-fill" style="width:${(r.share*100).toFixed(1)}%;background:${r.color}"></div></div><span class="num text-[11.5px] text-zinc-400">${fmtPct(r.share)}</span></div></td>
+      </tr>`).join('');
+    const ev = evById(last.eventId);
+    latestHtml = `
+      <div class="panel fade-up" style="animation-delay:.15s">
+        <div class="panel-hd flex items-center justify-between px-5 py-4">
+          <div class="flex items-center gap-3">
+            <h3 class="font-display font-semibold text-white text-[15px]">Round ${last.n} recap</h3>
+            <span class="chip bg-white/5 border border-white/10 text-zinc-300"><i data-lucide="${ev.icon}" class="w-3 h-3"></i>${ev.name}</span>
+          </div>
+          <button class="btn-ghost px-3 py-1.5 text-[12px] flex items-center gap-1.5" onclick="go('results')">Full results <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Team</th><th>Sold / Demand</th><th>Revenue</th><th>Profit / Loss</th><th>Share</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>`;
+  } else {
+    latestHtml = `
+      <div class="panel fade-up p-10 text-center" style="animation-delay:.15s">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-400/10 flex items-center justify-center mb-4"><i data-lucide="play" class="w-6 h-6 text-amber-300"></i></div>
+        <h3 class="font-display font-semibold text-white text-[16px] mb-1.5">No rounds processed yet</h3>
+        <p class="text-[13px] text-zinc-500 max-w-sm mx-auto mb-5">Collect Round 1 decision sheets from the teams, enter them in Decision Entry, draw an event card, and run the simulation.</p>
+        <button class="btn-amber px-5 py-2.5 text-[13px] inline-flex items-center gap-2" onclick="go('decisions')"><i data-lucide="clipboard-list" class="w-4 h-4"></i>Enter Round 1 decisions</button>
+      </div>`;
+  }
+
+  const topHtml = top.slice(0,3).map((t,i)=>{
+    const medals = ['pod-1','pod-2','pod-3'];
+    const iconsM = ['crown','medal','medal'];
+    return `<div class="flex items-center gap-3 p-3 rounded-xl border ${top.length&&t.stats.cash!==undefined?medals[i]:''} ${n?'':'opacity-40'}">
+      <div class="w-8 h-8 rounded-lg bg-black/30 flex items-center justify-center shrink-0"><i data-lucide="${iconsM[i]}" class="w-4 h-4 text-amber-200"></i></div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full shrink-0" style="background:${t.color}"></span><span class="text-[13px] font-medium text-zinc-100 truncate">${esc(t.name)}</span></div>
+        <div class="num text-[15px] font-bold text-white mt-0.5">${fmtMoney(t.stats.cash)}</div>
+      </div>
+      <div class="text-right shrink-0"><div class="num text-[11px] ${plCls(t.stats.cumProfit)}">${fmtDelta(t.stats.cumProfit)}</div><div class="text-[10px] text-zinc-600 uppercase tracking-wider">cum. P/L</div></div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+  <div class="max-w-[1200px] mx-auto space-y-5">
+    <div class="fade-up">
+      <div class="text-[10.5px] uppercase tracking-[.22em] text-amber-300/90 mb-1.5 flex items-center gap-2"><i data-lucide="radio" class="w-3.5 h-3.5"></i>Live event control</div>
+      <h2 class="font-display text-[34px] lg:text-[42px] font-bold tracking-tight text-white leading-none">Startup Wars <span class="text-zinc-600 font-medium">Arena</span></h2>
+      <p class="text-[13px] text-zinc-500 mt-2">Paper-first gameplay · this console only crunches the numbers for the manager.</p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      ${kpis.map((k,i)=>`
+      <div class="panel p-5 fade-up" style="animation-delay:${.04*i+0.05}s">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[10.5px] uppercase tracking-[.14em] text-zinc-500 font-medium">${k.label}</span>
+          <span class="w-7 h-7 rounded-lg ${k.cls} flex items-center justify-center shrink-0"><i data-lucide="${k.icon}" class="w-3.5 h-3.5"></i></span>
+        </div>
+        <div id="${k.id}" class="num text-[24px] lg:text-[27px] font-bold text-white leading-none">0</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-5">
+      <div class="lg:col-span-2">${latestHtml}</div>
+      <div class="space-y-5">
+        <div class="panel fade-up" style="animation-delay:.2s">
+          <div class="panel-hd flex items-center justify-between px-5 py-4">
+            <h3 class="font-display font-semibold text-white text-[15px]">Standings</h3>
+            <button class="btn-ghost px-3 py-1.5 text-[12px] flex items-center gap-1.5" onclick="go('leaderboard')">Leaderboard <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div class="p-4 space-y-2.5">${topHtml || '<p class="text-[12.5px] text-zinc-500 text-center py-6">No teams yet</p>'}</div>
+        </div>
+        <div class="panel fade-up p-5" style="animation-delay:.25s">
+          <h3 class="font-display font-semibold text-white text-[14px] mb-3.5 flex items-center gap-2"><i data-lucide="workflow" class="w-4 h-4 text-amber-300"></i>Run a round in 3 steps</h3>
+          <div class="space-y-3">
+            ${[['clipboard-pen','Collect paper sheets','Teams hand in their printed decision sheets.'],
+               ['dices','Draw an event card','Pick the matching market event in Decision Entry.'],
+               ['zap','Process & announce','One click computes everything. Read results aloud.']]
+              .map((s,i)=>`
+            <div class="flex gap-3">
+              <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-lg bg-amber-400/10 text-amber-300 flex items-center justify-center shrink-0"><i data-lucide="${s[0]}" class="w-4 h-4"></i></div>
+                ${i<2?'<div class="w-px flex-1 bg-white/8 mt-1"></div>':''}
+              </div>
+              <div class="pb-1"><div class="text-[13px] font-medium text-zinc-100">${s[1]}</div><div class="text-[11.5px] text-zinc-500 leading-snug mt-0.5">${s[2]}</div></div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  kpis.forEach(k=>animateNum(k.id, k.val, k.fmt));
+  setActions('');
+}
+
+// ============================================================
+//  VIEW: DECISIONS
+// ============================================================
+function lastDecisionFor(tid){
+  const n = state.rounds.length;
+  if(n===0) return {...DEFAULTS.decision};
+  return {...state.rounds[n-1].entries[tid] || DEFAULTS.decision};
+}
+
+function vDecisions(el){
+  const n = state.rounds.length;
+  if(state.teams.length===0){
+    el.innerHTML = `<div class="max-w-lg mx-auto panel p-10 text-center fade-up mt-10">
+      <i data-lucide="users" class="w-8 h-8 text-zinc-500 mx-auto mb-3"></i>
+      <h3 class="font-display font-semibold text-white text-[16px] mb-2">Add teams first</h3>
+      <p class="text-[13px] text-zinc-500 mb-5">You need at least one team before entering decisions.</p>
+      <button class="btn-amber px-5 py-2.5 text-[13px]" onclick="go('teams')">Go to Teams & Setup</button></div>`;
+    setActions(''); return;
+  }
+  if(n>=MAX_ROUNDS){
+    el.innerHTML = `<div class="max-w-lg mx-auto panel p-10 text-center fade-up mt-10">
+      <i data-lucide="flag" class="w-8 h-8 text-amber-300 mx-auto mb-3"></i>
+      <h3 class="font-display font-semibold text-white text-[16px] mb-2">Simulation complete</h3>
+      <p class="text-[13px] text-zinc-500 mb-5">All ${MAX_ROUNDS} rounds have been processed. Review the final leaderboard and results.</p>
+      <button class="btn-amber px-5 py-2.5 text-[13px]" onclick="go('leaderboard')">View final standings</button></div>`;
+    setActions(''); return;
+  }
+
+  const selEv = evById(state.ui.selectedEvent);
+  const proj = marketSize(n+1, selEv, state.config, state.teams.length);
+
+  const deck = EVENTS.map(e=>`
+    <div class="ev-card panel p-4 flex flex-col gap-2 min-h-[132px] ${e.id===selEv.id?'selected':''}" data-ev="${e.id}">
+      <div class="flex items-start justify-between">
+        <div class="w-8 h-8 rounded-lg ${e.kind==='good'?'bg-emerald-400/10 text-emerald-300':e.kind==='bad'?'bg-rose-400/10 text-rose-300':'bg-white/5 text-zinc-300'} flex items-center justify-center">
+          <i data-lucide="${e.icon}" class="w-4 h-4"></i>
+        </div>
+        <span class="ev-check w-5 h-5 rounded-full bg-amber-400 text-[#241703] flex items-center justify-center"><i data-lucide="check" class="w-3 h-3"></i></span>
+      </div>
+      <div>
+        <div class="text-[13px] font-semibold text-zinc-100 leading-tight">${e.name}</div>
+        <div class="chip ${e.kind==='good'?'bg-emerald-400/10 text-emerald-300':e.kind==='bad'?'bg-rose-400/10 text-rose-300':'bg-white/5 text-zinc-400'} mt-1.5">${e.tag}</div>
+      </div>
+      <p class="text-[11px] text-zinc-500 leading-snug">${e.desc}</p>
+    </div>`).join('');
+
+  const rows = state.teams.map(t=>{
+    const d = lastDecisionFor(t.id);
+    return `<tr>
+      <td><div class="flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${t.color}"></span>
+          <span class="font-medium text-zinc-100">${esc(t.name)}</span>
+          <span class="num text-[10.5px] text-zinc-600 hidden xl:inline">cash ${fmtMoney(t.stats.cash)}</span>
+        </div></td>
+      ${['price','units','mkt','rd'].map(f=>`
+      <td class="ta-c"><input type="number" min="0" step="any" value="${d[f]}" data-tid="${t.id}" data-f="${f}"
+        class="inp dec-inp num ta-r w-[110px] ${f==='price'?'b-price':''}" placeholder="0"></td>`).join('')}
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+  <div class="max-w-[1200px] mx-auto space-y-5">
+    <div class="panel fade-up">
+      <div class="panel-hd px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-400/10 text-amber-300 flex items-center justify-center"><i data-lucide="dices" class="w-4.5 h-4.5"></i></div>
+          <div>
+            <h3 class="font-display font-semibold text-white text-[15px]">Step 1 — Draw the Round ${n+1} event card</h3>
+            <p class="text-[11.5px] text-zinc-500">Draw a physical card, then select its match here — or let the console draw for you.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <div class="panel px-3 py-2 text-right">
+            <div class="text-[9.5px] uppercase tracking-[.14em] text-zinc-500">Projected market</div>
+            <div id="proj-mkt" class="num text-[15px] font-bold text-amber-300 leading-tight">~${fmtNum(proj)} customers</div>
+          </div>
+          <button id="draw-random" class="btn-ghost px-4 py-2.5 text-[12.5px] flex items-center gap-2"><i data-lucide="shuffle" class="w-4 h-4"></i>Draw random card</button>
+        </div>
+      </div>
+      <div class="p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">${deck}</div>
+    </div>
+
+    <div class="panel fade-up" style="animation-delay:.08s">
+      <div class="panel-hd px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-sky-400/10 text-sky-300 flex items-center justify-center"><i data-lucide="clipboard-pen" class="w-4.5 h-4.5"></i></div>
+          <div>
+            <h3 class="font-display font-semibold text-white text-[15px]">Step 2 — Enter team decisions from paper sheets</h3>
+            <p class="text-[11.5px] text-zinc-500">Pre-filled with each team's previous round. Overwrite with this round's sheet values.</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="fill-blank" class="btn-ghost px-3.5 py-2 text-[12px] flex items-center gap-1.5"><i data-lucide="eraser" class="w-3.5 h-3.5"></i>Clear values</button>
+          <button id="fill-prev" class="btn-ghost px-3.5 py-2 text-[12px] flex items-center gap-1.5"><i data-lucide="history" class="w-3.5 h-3.5"></i>Refill previous</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr>
+            <th>Team</th>
+            <th class="ta-c">Price / unit ($)</th>
+            <th class="ta-c">Units produced</th>
+            <th class="ta-c">Marketing ($)</th>
+            <th class="ta-c">R&amp;D ($)</th>
+          </tr></thead>
+          <tbody id="dec-body">${rows}</tbody>
+        </table>
+      </div>
+      <div class="px-5 py-4 border-t border-white/7 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-[11.5px] text-zinc-500 flex items-center gap-2"><i data-lucide="info" class="w-3.5 h-3.5 text-zinc-600"></i>Event in play: <span class="chip bg-amber-400/10 text-amber-300" id="sel-ev-chip"><i data-lucide="${selEv.icon}" class="w-3 h-3"></i>${selEv.name}</span></div>
+        <button id="process-btn" class="btn-amber px-6 py-3 text-[13.5px] flex items-center gap-2.5">
+          <i data-lucide="zap" class="w-4.5 h-4.5"></i>Process Round ${n+1}
+        </button>
+      </div>
+    </div>
+  </div>`;
+
+  // --- bindings ---
+  el.querySelectorAll('.ev-card').forEach(c=>{
+    c.addEventListener('click', ()=> selectEvent(c.dataset.ev));
+  });
+  document.getElementById('draw-random').onclick = drawRandom;
+  document.getElementById('fill-blank').onclick = ()=>{ el.querySelectorAll('.dec-inp').forEach(i=>{i.value='';i.classList.remove('invalid');}); };
+  document.getElementById('fill-prev').onclick = ()=>{ el.querySelectorAll('.dec-inp').forEach(i=>{ i.value = lastDecisionFor(i.dataset.tid)[i.dataset.f]; i.classList.remove('invalid'); }); };
+  el.querySelectorAll('.dec-inp').forEach(i=> i.addEventListener('input',()=>i.classList.remove('invalid')));
+  document.getElementById('process-btn').onclick = runRound;
+  setActions('');
+}
+
+function selectEvent(id){
+  state.ui.selectedEvent = id; save();
+  document.querySelectorAll('.ev-card').forEach(c=> c.classList.toggle('selected', c.dataset.ev===id));
+  const ev = evById(id);
+  const proj = marketSize(state.rounds.length+1, ev, state.config, state.teams.length);
+  const pj = document.getElementById('proj-mkt'); if(pj) pj.textContent = '~'+fmtNum(proj)+' customers';
+  const chip = document.getElementById('sel-ev-chip');
+  if(chip){ chip.innerHTML = `<i data-lucide="${ev.icon}" class="w-3 h-3"></i>${ev.name}`; icons(); }
+}
+
+function drawRandom(){
+  const cards = [...document.querySelectorAll('.ev-card')];
+  if(!cards.length) return;
+  const final = EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  let step = 0; const total = 14;
+  (function cycle(){
+    cards.forEach(c=>c.classList.remove('flash'));
+    const r = cards[Math.floor(Math.random()*cards.length)];
+    r.classList.add('flash');
+    if(++step < total){ setTimeout(cycle, 55 + step*step*1.6); }
+    else setTimeout(()=>{
+      cards.forEach(c=>c.classList.remove('flash'));
+      selectEvent(final.id);
+      const card = document.querySelector(`.ev-card[data-ev="${final.id}"]`);
+      if(card) card.scrollIntoView({block:'nearest', behavior:'smooth'});
+      toast(`Card drawn: <b>${final.name}</b> — ${final.tag}`,'info');
+    }, 420);
+  })();
+}
+
+function readDecisions(){
+  const entries = {}; let ok = true;
+  document.querySelectorAll('.dec-inp').forEach(inp=>{
+    const v = parseFloat(inp.value);
+    const f = inp.dataset.f;
+    if(isNaN(v) || v<0 || (f==='price' && v<=0)){ inp.classList.add('invalid'); ok=false; return; }
+    (entries[inp.dataset.tid] = entries[inp.dataset.tid] || {})[f] = f==='units' ? Math.round(v) : v;
+  });
+  return ok ? entries : null;
+}
+
+function runRound(){
+  if(state.rounds.length>=MAX_ROUNDS) return;
+  const entries = readDecisions();
+  if(!entries){ toast('Some fields are empty or invalid. Every team needs a price above $0.', 'warn'); return; }
+  const btn = document.getElementById('process-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-circle" class="w-4.5 h-4.5 animate-spin"></i>Simulating…';
+  icons();
+  setTimeout(()=>{
+    const round = processRound(entries, state.ui.selectedEvent);
+    toast(`<b>Round ${round.n} processed.</b> Market revenue ${fmtMoney(round.totalRevenue)} · ${fmtNum(round.totalSold)} units sold.`, 'ok');
+    state.ui.view = 'results'; save(); render();
+  }, 650);
+}
+
+// ============================================================
+//  VIEW: RESULTS
+// ============================================================
+function roundCard(r, delay){
+  const ev = evById(r.eventId);
+  const rows = Object.entries(r.results).sort((a,b)=>b[1].profit-a[1].profit).map(([tid,x],i)=>{
+    const rank = r.rankMap && r.rankMap[tid] ? r.rankMap[tid] : i+1;
+    return `<tr>
+      <td><div class="flex items-center gap-2.5">
+        <span class="num text-[11px] w-4 ${rank===1?'text-amber-300':'text-zinc-500'}">${rank}</span>
+        <span class="w-2 h-2 rounded-full shrink-0" style="background:${x.color}"></span>
+        <span class="text-zinc-100 font-medium">${esc(x.name)}</span></div></td>
+      <td class="num">${fmtMoney(x.price)}</td>
+      <td class="num">${fmtNum(x.units)}</td>
+      <td class="num">${fmtNum(x.demand)}</td>
+      <td class="num">${fmtNum(x.sold)}</td>
+      <td class="num ${x.unmet>1?'text-amber-300':'text-zinc-600'}">${x.unmet>1?fmtNum(x.unmet):'—'}</td>
+      <td class="num text-zinc-100">${fmtMoney(x.revenue)}</td>
+      <td class="num text-zinc-400">${fmtMoney(x.costs)}</td>
+      ${x.grant?'<td class="num text-emerald-400">+'+fmtMoney(x.grant)+'</td>':'<td class="num text-zinc-600">—</td>'}
+      <td class="num font-semibold ${plCls(x.profit)}">${fmtDelta(x.profit)}</td>
+      <td class="num text-zinc-100">${fmtMoney(x.cash)}</td>
+      <td><div class="flex items-center justify-end gap-2"><div class="bar-track w-14"><div class="bar-fill" style="width:${(x.share*100).toFixed(1)}%;background:${x.color}"></div></div><span class="num text-[11.5px] text-zinc-400">${fmtPct(x.share)}</span></div></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="panel fade-up" style="animation-delay:${delay}s">
+    <div class="panel-hd px-5 py-4 flex flex-wrap items-center gap-3 justify-between">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="font-display font-bold text-white text-[16px]">Round ${r.n}</div>
+        <span class="chip ${ev.kind==='good'?'bg-emerald-400/10 text-emerald-300':ev.kind==='bad'?'bg-rose-400/10 text-rose-300':'bg-white/5 text-zinc-300'} border border-white/5"><i data-lucide="${ev.icon}" class="w-3 h-3"></i>${ev.name}</span>
+        <span class="text-[11px] text-zinc-500 num">${new Date(r.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="text-right"><div class="text-[9.5px] uppercase tracking-[.14em] text-zinc-500">Market</div><div class="num text-[13px] font-semibold text-zinc-200">${fmtNum(r.marketSize)}</div></div>
+        <div class="text-right"><div class="text-[9.5px] uppercase tracking-[.14em] text-zinc-500">Revenue</div><div class="num text-[13px] font-semibold text-zinc-200">${fmtMoney(r.totalRevenue)}</div></div>
+        <div class="text-right"><div class="text-[9.5px] uppercase tracking-[.14em] text-zinc-500">Total P/L</div><div class="num text-[13px] font-semibold ${plCls(r.totalProfit)}">${fmtDelta(r.totalProfit)}</div></div>
+        <button class="btn-ghost px-3 py-1.5 text-[12px] flex items-center gap-1.5 no-print" onclick="exportRound(${r.n})"><i data-lucide="download" class="w-3.5 h-3.5"></i>CSV</button>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+    <table class="tbl">
+      <thead><tr><th>Team</th><th>Price</th><th>Produced</th><th>Demand</th><th>Sold</th><th>Unmet</th><th>Revenue</th><th>Costs</th><th>Grant</th><th>P/L</th><th>Cash</th><th>Share</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function vResults(el){
+  const rounds = state.rounds;
+  if(rounds.length===0){
+    el.innerHTML = `<div class="max-w-lg mx-auto panel p-10 text-center fade-up mt-10">
+      <i data-lucide="chart-column" class="w-8 h-8 text-zinc-500 mx-auto mb-3"></i>
+      <h3 class="font-display font-semibold text-white text-[16px] mb-2">No results yet</h3>
+      <p class="text-[13px] text-zinc-500 mb-5">Process a round in Decision Entry and its full breakdown will appear here.</p>
+      <button class="btn-amber px-5 py-2.5 text-[13px]" onclick="go('decisions')">Enter decisions</button></div>`;
+    setActions(''); return;
+  }
+  const cards = [...rounds].reverse().map((r,i)=> roundCard(r, .05*i)).join('');
+  el.innerHTML = `<div class="max-w-[1250px] mx-auto space-y-5">${cards}</div>`;
+  setActions(`
+    <button class="btn-ghost px-3.5 py-2 text-[12.5px] flex items-center gap-2" onclick="exportAll()"><i data-lucide="download" class="w-4 h-4"></i><span class="hidden md:inline">Export all CSV</span></button>
+    <button class="btn-ghost px-3.5 py-2 text-[12.5px] flex items-center gap-2" onclick="window.print()"><i data-lucide="printer" class="w-4 h-4"></i><span class="hidden md:inline">Print</span></button>`);
+}
+
+function toCSV(rows){
+  return rows.map(r=> r.map(c=>{ const s=String(c??''); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }).join(',')).join('\n');
+}
+function download(name, text){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text],{type:'text/csv'}));
+  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+const CSV_HEAD = ['Round','Team','Price','Units Produced','Demand','Units Sold','Unmet Demand','Revenue','Production Cost','Marketing','R&D','Overhead','Total Costs','Grant','Profit/Loss','Cash','Market Share %'];
+function roundRows(r){
+  return Object.entries(r.results).sort((a,b)=>b[1].profit-a[1].profit).map(([tid,x])=>[
+    r.n, x.name, x.price.toFixed(2), Math.round(x.units), Math.round(x.demand), Math.round(x.sold), Math.round(x.unmet),
+    x.revenue.toFixed(2), x.cogs.toFixed(2), x.mkt.toFixed(2), x.rd.toFixed(2), x.overhead.toFixed(2),
+    x.costs.toFixed(2), x.grant.toFixed(2), x.profit.toFixed(2), x.cash.toFixed(2), (x.share*100).toFixed(1)
+  ]);
+}
+function exportRound(n){
+  const r = state.rounds.find(x=>x.n===n); if(!r) return;
+  download(`startup-wars-round-${n}.csv`, toCSV([CSV_HEAD, ...roundRows(r)]));
+  toast(`Round ${n} exported as CSV.`,'ok');
+}
+function exportAll(){
+  if(!state.rounds.length) return;
+  const rows = state.rounds.flatMap(roundRows);
+  download('startup-wars-all-rounds.csv', toCSV([CSV_HEAD, ...rows]));
+  toast('All rounds exported as CSV.','ok');
+}
+
+// ============================================================
+//  VIEW: LEADERBOARD
+// ============================================================
+function teamDetail(tid){
+  const t = state.teams.find(x=>x.id===tid); if(!t) return;
+  const rows = state.rounds.map(r=>{
+    const x = r.results[tid]; if(!x) return '';
+    const ev = evById(r.eventId);
+    return `<tr>
+      <td><span class="num text-[12px] text-zinc-300">R${r.n}</span></td>
+      <td><span class="chip ${ev.kind==='good'?'bg-emerald-400/10 text-emerald-300':ev.kind==='bad'?'bg-rose-400/10 text-rose-300':'bg-white/5 text-zinc-400'}">${ev.name}</span></td>
+      <td class="num">${fmtNum(x.sold)}</td><td class="num">${fmtMoney(x.revenue)}</td>
+      <td class="num ${plCls(x.profit)}">${fmtDelta(x.profit)}</td><td class="num text-zinc-100">${fmtMoney(x.cash)}</td>
+      <td class="num text-zinc-400">${fmtPct(x.share)}</td></tr>`;
+  }).join('');
+  openModal(`
+  <div class="p-6">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="w-3.5 h-3.5 rounded-full" style="background:${t.color}"></span>
+      <h3 class="font-display font-semibold text-white text-[17px]">${esc(t.name)}</h3>
+      <span class="ml-auto num text-[18px] font-bold text-white">${fmtMoney(t.stats.cash)}</span>
+    </div>
+    <div class="grid grid-cols-4 gap-2.5 mb-4">
+      ${[['Cum. P/L', fmtDelta(t.stats.cumProfit), plCls(t.stats.cumProfit)],['Tech level', t.stats.quality.toFixed(1),'text-violet-300'],['Reputation', Math.round(t.stats.reputation*100)+'%','text-sky-300'],['Avg share', t.history.share.length?fmtPct(t.history.share.reduce((a,b)=>a+b,0)/t.history.share.length):'—','text-amber-300']]
+        .map(x=>`<div class="panel p-3 text-center"><div class="text-[9.5px] uppercase tracking-[.12em] text-zinc-500 mb-1">${x[0]}</div><div class="num text-[14px] font-bold ${x[2]}">${x[1]}</div></div>`).join('')}
+    </div>
+    <div class="panel p-4 mb-4 flex items-center justify-center">${spark(t.history.cash, 420, 60, t.color)}</div>
+    <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+    <table class="tbl"><thead><tr><th>Round</th><th>Event</th><th>Sold</th><th>Revenue</th><th>P/L</th><th>Cash</th><th>Share</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="7" class="ta-c text-zinc-500 py-6">No rounds yet</td></tr>'}</tbody></table>
+    </div>
+    <div class="flex justify-end mt-4"><button class="btn-ghost px-4 py-2 text-[12.5px]" onclick="closeModal()">Close</button></div>
+  </div>`, true);
+}
+
+function vLeaderboard(el){
+  const roundsN = state.rounds.length;
+  const teams = rankedTeams();
+  if(roundsN===0){
+    el.innerHTML = `<div class="max-w-lg mx-auto panel p-10 text-center fade-up mt-10">
+      <i data-lucide="trophy" class="w-8 h-8 text-zinc-500 mx-auto mb-3"></i>
+      <h3 class="font-display font-semibold text-white text-[16px] mb-2">Standings unlock after Round 1</h3>
+      <p class="text-[13px] text-zinc-500 mb-5">The leaderboard updates automatically every time a round is processed.</p>
+      <button class="btn-amber px-5 py-2.5 text-[13px]" onclick="go('decisions')">Process a round</button></div>`;
+    setActions(''); return;
+  }
+
+  const prevRanks = lastRankMap();
+  const maxCash = Math.max(...teams.map(t=>t.stats.cash), 1);
+
+  const pod = teams.slice(0,3);
+  const podHtml = [1,0,2].map(idx=>{
+    const t = pod[idx]; if(!t) return '<div class="flex-1"></div>';
+    const isFirst = idx===0;
+    const cls = ['pod-1','pod-2','pod-3'][idx];
+    const ring = isFirst?'ring-1 ring-amber-400/40 shadow-[0_20px_60px_-20px_rgba(247,179,43,.35)]':'';
+    const medalCol = ['text-amber-300','text-zinc-300','text-amber-600'][idx];
+    return `
+    <div class="flex-1 panel ${cls} ${ring} ${isFirst?'py-7':'py-5 mt-6'} px-5 text-center fade-up cursor-pointer hover:-translate-y-1 transition-transform" style="animation-delay:${.08*idx+.05}s" onclick="teamDetail('${t.id}')">
+      <div class="w-10 h-10 mx-auto rounded-full bg-black/30 flex items-center justify-center mb-2.5"><i data-lucide="${isFirst?'crown':'medal'}" class="w-5 h-5 ${medalCol}"></i></div>
+      <div class="num text-[10px] tracking-[.2em] text-zinc-500 mb-1">RANK ${idx+1}</div>
+      <div class="flex items-center justify-center gap-2 mb-1"><span class="w-2.5 h-2.5 rounded-full" style="background:${t.color}"></span><span class="font-display font-semibold text-white ${isFirst?'text-[17px]':'text-[15px]'} truncate">${esc(t.name)}</span></div>
+      <div class="num ${isFirst?'text-[26px]':'text-[21px]'} font-bold text-white leading-tight">${fmtMoney(t.stats.cash)}</div>
+      <div class="num text-[11.5px] ${plCls(t.stats.cumProfit)} mt-1">${fmtDelta(t.stats.cumProfit)} total</div>
+    </div>`;
+  }).join('');
+
+  const rows = teams.map((t,i)=>{
+    const rank = i+1;
+    const prev = prevRanks ? prevRanks[t.id] : null;
+    const delta = prev==null ? 0 : prev - rank;
+    const deltaHtml = roundsN>1
+      ? (delta>0 ? `<span class="chip bg-emerald-400/10 text-emerald-300"><i data-lucide="arrow-up-right" class="w-3 h-3"></i>${delta}</span>`
+        : delta<0 ? `<span class="chip bg-rose-400/10 text-rose-300"><i data-lucide="arrow-down-right" class="w-3 h-3"></i>${Math.abs(delta)}</span>`
+        : `<span class="chip bg-white/5 text-zinc-500"><i data-lucide="minus" class="w-3 h-3"></i></span>`)
+      : '<span class="text-zinc-700">—</span>';
+    const avgShare = t.history.share.length ? t.history.share.reduce((a,b)=>a+b,0)/t.history.share.length : 0;
+    return `<tr class="cursor-pointer" onclick="teamDetail('${t.id}')">
+      <td><div class="flex items-center gap-2.5">
+        <span class="num font-bold ${rank===1?'text-amber-300':rank<=3?'text-zinc-200':'text-zinc-500'} text-[14px] w-5">${rank}</span>${deltaHtml}</div></td>
+      <td><div class="flex items-center gap-2.5"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${t.color}"></span><span class="font-medium text-zinc-100">${esc(t.name)}</span>
+        <span class="text-zinc-700">${spark(t.history.cash, 64, 20, t.color)}</span></div></td>
+      <td class="num font-bold text-white text-[14px]">${fmtMoney(t.stats.cash)}</td>
+      <td><div class="flex items-center justify-end gap-2.5"><div class="bar-track w-24 hidden md:block"><div class="bar-fill" style="width:${clamp(t.stats.cash/maxCash*100,2,100).toFixed(1)}%;background:${t.color}"></div></div></div></td>
+      <td class="num ${plCls(t.stats.cumProfit)}">${fmtDelta(t.stats.cumProfit)}</td>
+      <td class="num text-zinc-300">${fmtPct(avgShare)}</td>
+      <td class="num text-violet-300">${t.stats.quality.toFixed(1)}</td>
+      <td class="num text-sky-300">${Math.round(t.stats.reputation*100)}%</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+  <div class="max-w-[1100px] mx-auto space-y-5">
+    <div class="flex items-stretch gap-3.5">${podHtml}</div>
+    <div class="panel fade-up" style="animation-delay:.25s">
+      <div class="panel-hd px-5 py-4 flex items-center justify-between">
+        <h3 class="font-display font-semibold text-white text-[15px]">Full standings <span class="text-zinc-600 font-normal">· after Round ${roundsN}</span></h3>
+        <span class="text-[11px] text-zinc-500">Ranked by cash on hand · click a team for full history</span>
+      </div>
+      <div class="overflow-x-auto">
+      <table class="tbl">
+        <thead><tr><th>Rank</th><th>Team</th><th>Cash on hand</th><th></th><th>Cum. P/L</th><th>Avg share</th><th>Tech lvl</th><th>Rep</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+  setActions(`<button class="btn-ghost px-3.5 py-2 text-[12.5px] flex items-center gap-2" onclick="window.print()"><i data-lucide="printer" class="w-4 h-4"></i><span class="hidden md:inline">Print standings</span></button>`);
+}
+
+// ============================================================
+//  VIEW: TEAMS & SETUP
+// ============================================================
+function vTeams(el){
+  const cfg = state.config;
+  const locked = state.rounds.length>0;
+
+  const rows = state.teams.map((t,i)=>`
+    <tr>
+      <td><div class="flex items-center gap-2.5">
+        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${t.color}"></span>
+        <input class="inp inp-sm w-[190px] team-name" data-tid="${t.id}" value="${esc(t.name)}">
+      </div></td>
+      <td class="num text-zinc-100">${fmtMoney(t.stats.cash)}</td>
+      <td class="num ${plCls(t.stats.cumProfit)}">${fmtDelta(t.stats.cumProfit)}</td>
+      <td class="num text-violet-300">${t.stats.quality.toFixed(1)}</td>
+      <td class="num text-sky-300">${Math.round(t.stats.reputation*100)}%</td>
+      <td class="num text-zinc-400">${fmtNum(t.history.cash.length)}</td>
+      <td>${spark(t.history.cash, 80, 22, t.color)}</td>
+      <td><button class="btn-danger px-2.5 py-1.5 text-[11.5px] remove-team inline-flex items-center gap-1.5" data-tid="${t.id}" ${state.teams.length<=1?'disabled style="opacity:.35;pointer-events:none"':''}><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Remove</button></td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+  <div class="max-w-[1100px] mx-auto space-y-5">
+    <div class="grid lg:grid-cols-3 gap-5">
+      <div class="lg:col-span-2 panel fade-up">
+        <div class="panel-hd px-5 py-4 flex items-center justify-between">
+          <div>
+            <h3 class="font-display font-semibold text-white text-[15px]">Competing teams <span class="text-zinc-600 font-normal">· ${state.teams.length}</span></h3>
+            <p class="text-[11.5px] text-zinc-500">Names are editable anytime. Historical rounds keep a snapshot.</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="tbl">
+          <thead><tr><th>Team</th><th>Cash</th><th>Cum. P/L</th><th>Tech lvl</th><th>Rep</th><th>Rounds</th><th>Cash trend</th><th></th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="8" class="ta-c text-zinc-500 py-8">No teams yet — add your first team on the right.</td></tr>'}</tbody>
+        </table></div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="panel fade-up p-5" style="animation-delay:.06s">
+          <h3 class="font-display font-semibold text-white text-[14px] mb-3 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-amber-300"></i>Add a team</h3>
+          <div class="flex gap-2">
+            <input id="new-team-name" class="inp flex-1 min-w-0" placeholder="Team name…" maxlength="28">
+            <button id="add-team" class="btn-amber px-4 py-2 text-[12.5px] flex items-center gap-1.5 shrink-0"><i data-lucide="plus" class="w-4 h-4"></i>Add</button>
+          </div>
+          ${locked?'<p class="text-[11px] text-amber-300/80 mt-2.5 flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5"></i>Mid-event joins start with the standard starting cash.</p>':''}
+        </div>
+
+        <div class="panel fade-up p-5" style="animation-delay:.12s">
+          <h3 class="font-display font-semibold text-white text-[14px] mb-1 flex items-center gap-2"><i data-lucide="settings-2" class="w-4 h-4 text-sky-300"></i>Market economics</h3>
+          <p class="text-[11px] text-zinc-500 mb-3.5">Tune to match your printed rulebook. Applies from the next round onward.</p>
+          <div class="grid grid-cols-2 gap-2.5">
+            ${[['cfg-startingCash','Starting cash ($)',cfg.startingCash],['cfg-unitCost','Unit cost ($)',cfg.baseUnitCost],['cfg-overhead','Overhead / round ($)',cfg.fixedOverhead],['cfg-demand','Base customers / team',cfg.demandPerTeam]]
+              .map(c=>`<label class="block"><span class="text-[10px] uppercase tracking-[.1em] text-zinc-500 font-medium">${c[1]}</span>
+              <input id="${c[0]}" type="number" min="0" step="any" class="inp num w-full mt-1 ta-r" value="${c[2]}"></label>`).join('')}
+          </div>
+        </div>
+
+        <div class="panel fade-up p-5 b-danger" style="animation-delay:.18s">
+          <h3 class="font-display font-semibold text-rose-300 text-[14px] mb-3 flex items-center gap-2"><i data-lucide="triangle-alert" class="w-4 h-4"></i>Danger zone</h3>
+          <div class="space-y-2">
+            <button id="reset-rounds" class="btn-danger w-full px-4 py-2.5 text-[12.5px] flex items-center justify-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Reset event (clear all rounds)</button>
+            <button id="load-sample" class="btn-ghost w-full px-4 py-2.5 text-[12.5px] flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i>Reload sample event data</button>
+            <button id="wipe-all" class="btn-danger w-full px-4 py-2.5 text-[12.5px] flex items-center justify-center gap-2"><i data-lucide="trash" class="w-4 h-4"></i>Wipe everything (fresh event)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // bindings
+  el.querySelectorAll('.team-name').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const t = state.teams.find(x=>x.id===inp.dataset.tid);
+      const v = inp.value.trim();
+      if(t && v){ t.name = v; save(); toast('Team renamed.','ok'); renderNav(); } else { inp.value = t? t.name : ''; }
+    });
+  });
+  el.querySelectorAll('.remove-team').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const t = state.teams.find(x=>x.id===b.dataset.tid); if(!t) return;
+      confirmModal('Remove team?', `Remove <b>${esc(t.name)}</b>? Past round reports keep their historical scores, but they will no longer appear in future rounds or standings.`, 'Remove team', ()=>{
+        state.teams = state.teams.filter(x=>x.id!==t.id); save(); render(); toast(`<b>${esc(t.name)}</b> removed.`,'ok');
+      }, true);
+    });
+  });
+  const addTeam = ()=>{
+    const inp = document.getElementById('new-team-name');
+    const v = inp.value.trim();
+    if(!v){ toast('Enter a team name first.','warn'); inp.focus(); return; }
+    if(state.teams.some(t=>t.name.toLowerCase()===v.toLowerCase())){ toast('A team with that name already exists.','warn'); return; }
+    state.teams.push(newTeam(v, state.teams.length, state.config));
+    save(); render(); toast(`<b>${esc(v)}</b> joined the arena.`,'ok');
+  };
+  document.getElementById('add-team').onclick = addTeam;
+  document.getElementById('new-team-name').addEventListener('keydown', e=>{ if(e.key==='Enter') addTeam(); });
+
+  const cfgBind = (id, key)=>{
+    const inp = document.getElementById(id);
+    inp.addEventListener('change', ()=>{
+      const v = parseFloat(inp.value);
+      if(isNaN(v)||v<0){ inp.value = state.config[key]; return; }
+      state.config[key] = v; save(); toast('Economics updated for upcoming rounds.','ok');
+    });
+  };
+  cfgBind('cfg-startingCash','startingCash'); cfgBind('cfg-unitCost','baseUnitCost');
+  cfgBind('cfg-overhead','fixedOverhead');   cfgBind('cfg-demand','demandPerTeam');
+
+  document.getElementById('reset-rounds').onclick = ()=>{
+    confirmModal('Reset event?', 'All processed rounds will be cleared and every team returns to its starting cash. Team list and economics stay as they are.', 'Reset event', ()=>{
+      state.rounds = [];
+      state.teams.forEach(t=>{ t.stats = freshStats(state.config); t.history = {cash:[],profit:[],share:[]}; });
+      save(); render(); toast('Event reset. Ready for Round 1.','ok');
+    }, true);
+  };
+  document.getElementById('load-sample').onclick = ()=>{
+    confirmModal('Load sample data?', 'This replaces the current event with the built-in demo: 6 sample teams and 2 processed rounds.', 'Load sample', ()=>{
+      seedSample(); render(); toast('Sample event loaded — explore the demo rounds.','ok');
+    });
+  };
+  document.getElementById('wipe-all').onclick = ()=>{
+    confirmModal('Wipe everything?', 'Teams, rounds and settings will all be deleted, leaving a completely fresh event. This cannot be undone.', 'Wipe all data', ()=>{
+      localStorage.removeItem(LS_KEY);
+      state = { version:1, config:JSON.parse(JSON.stringify(DEFAULTS.config)), rounds:[], teams:[], ui:{view:'teams', selectedEvent:'stable'} };
+      save(); render(); toast('Fresh event created. Add your teams to begin.','ok');
+    }, true);
+  };
+}
+
+// ============================================================
+//  VIEW: EVENT GUIDE (how to play)
+// ============================================================
+function printSheet(){
+  document.body.classList.add('print-sheet');
+  const done = ()=>{ document.body.classList.remove('print-sheet'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+  setTimeout(done, 900);
+}
+
+function vGuide(el){
+  const cfg = state.config;
+
+  const concept = [
+    ['file-text','Paper-first play','Participants never touch a device. They strategize, fill printed decision sheets, and hand them to you.'],
+    ['swords','Manager console','This screen is yours alone. You enter sheets, draw event cards, and it computes every number instantly.'],
+    ['hard-drive','Offline & private','No internet, accounts, or uploads. The whole event lives inside this one browser tab.'],
+  ].map(c=>`
+    <div class="panel p-5">
+      <div class="w-9 h-9 rounded-xl bg-amber-400/10 text-amber-300 flex items-center justify-center mb-3"><i data-lucide="${c[0]}" class="w-4.5 h-4.5"></i></div>
+      <div class="text-[14px] font-semibold text-white mb-1">${c[1]}</div>
+      <p class="text-[12px] text-zinc-400 leading-relaxed">${c[2]}</p>
+    </div>`).join('');
+
+  const prep = [
+    'Print one <b class="text-zinc-200">decision sheet</b> per team, per round (template below).',
+    'Print the <b class="text-zinc-200">9 event cards</b> as a physical deck — or skip printing and use <i>Draw random card</i> here.',
+    'Brief teams on the rules (60 seconds): every firm sells the same product and sets 4 numbers per round.',
+    'Suggested session: <b class="text-zinc-200">5–7 teams</b>, 2–4 players each · <b class="text-zinc-200">5–6 rounds</b> · 90–120 min total.',
+    'Keep this console on a projector or side screen; print & post the leaderboard after each round.',
+  ].map((p,i)=>`
+    <div class="flex gap-3 items-start">
+      <span class="num text-[11px] font-bold text-amber-300 bg-amber-400/10 rounded-lg w-6 h-6 flex items-center justify-center shrink-0 mt-0.5">${i+1}</span>
+      <p class="text-[12.5px] text-zinc-400 leading-relaxed">${p}</p>
+    </div>`).join('');
+
+  const steps = [
+    ['dices','Draw the event card','Draw a physical card and select its match here — the console shows the projected market size live.'],
+    ['megaphone','Announce the round','Read the event aloud and start the clock: teams get ~4 minutes to strategize.'],
+    ['clipboard-pen','Teams decide on paper','Each team writes 4 numbers on its sheet: price, units to produce, marketing spend, R&D spend.'],
+    ['zap','Enter & process','Type every sheet into the decision matrix and press Process Round — all math is instant.'],
+    ['trophy','Announce results','Read revenue and profit/loss aloud. The leaderboard updates itself — print and post it.'],
+  ].map((s,i)=>`
+    <div class="flex gap-3.5">
+      <div class="flex flex-col items-center">
+        <div class="w-9 h-9 rounded-xl bg-sky-400/10 text-sky-300 flex items-center justify-center shrink-0"><i data-lucide="${s[0]}" class="w-4 h-4"></i></div>
+        ${i<4?'<div class="w-px flex-1 bg-white/8 mt-1"></div>':''}
+      </div>
+      <div class="pb-5">
+        <div class="text-[13.5px] font-semibold text-white flex items-center gap-2"><span class="text-[10px] num text-zinc-500">0${i+1}</span>${s[1]}</div>
+        <p class="text-[12px] text-zinc-400 leading-relaxed mt-1">${s[2]}</p>
+      </div>
+    </div>`).join('');
+
+  const decisions = [
+    ['tag','Price per unit','Cheaper than the round average pulls customers toward you — but every dollar of price is a dollar of margin. Pricing too low can win sales and still lose money.'],
+    ['factory','Units to produce','You pay ${U} for every unit made. Sales = the lower of your demand and your units. Overproduction is written off; underproduction hands customers to rivals.'],
+    ['megaphone','Marketing spend','Pure demand lever for this round only. On a Viral Trend round every marketing dollar counts 1.5×.'],
+    ['flask-conical','R&D spend','The long game: permanently raises your Tech level, which wins appeal every future round and trims your unit cost (up to −20%).'],
+  ].map(d=>`
+    <div class="panel p-5">
+      <div class="flex items-center gap-2.5 mb-2">
+        <span class="w-7 h-7 rounded-lg bg-violet-400/10 text-violet-300 flex items-center justify-center shrink-0"><i data-lucide="${d[0]}" class="w-3.5 h-3.5"></i></span>
+        <span class="text-[13px] font-semibold text-white">${d[1]}</span>
+      </div>
+      <p class="text-[12px] text-zinc-400 leading-relaxed">${d[2].replace('${U}', fmtMoney(cfg.baseUnitCost))}</p>
+    </div>`).join('');
+  // NOTE: template literal above — replace trick handles the unit-cost placeholder.
+
+  const formulas = [
+    ['1 · Market size','250 customers per team × number of teams, growing 7% each round → then × the event card\u2019s demand modifier.'],
+    ['2 · Appeal & demand split','Cheap prices, heavy marketing, high Tech and good reputation raise a team\u2019s appeal. The market is split in proportion to appeal.'],
+    ['3 · Sales & revenue','Units sold = lower of demand and production. Revenue = units sold × your price.'],
+    ['4 · Costs','Every unit produced × unit cost, plus marketing, R&D, and ${Ov} overhead per round. Event cards can raise/lower unit cost.'],
+    ['5 · P/L & cash','Profit = revenue − costs (+ any grant). Cash carries forward. The leaderboard ranks by cash on hand.'],
+  ].map(f=>`
+    <div class="flex gap-3 items-start">
+      <div class="font-display font-bold text-amber-300 text-[13px] w-[118px] shrink-0 pt-0.5">${f[0]}</div>
+      <p class="text-[12.5px] text-zinc-400 leading-relaxed">${f[1].replace('${Ov}', fmtMoney(cfg.fixedOverhead))}</p>
+    </div>`).join('');
+
+  const deck = EVENTS.map(e=>`
+    <div class="panel p-4 flex flex-col gap-2">
+      <div class="w-8 h-8 rounded-lg ${e.kind==='good'?'bg-emerald-400/10 text-emerald-300':e.kind==='bad'?'bg-rose-400/10 text-rose-300':'bg-white/5 text-zinc-300'} flex items-center justify-center">
+        <i data-lucide="${e.icon}" class="w-4 h-4"></i>
+      </div>
+      <div>
+        <div class="text-[13px] font-semibold text-zinc-100 leading-tight">${e.name}</div>
+        <div class="chip ${e.kind==='good'?'bg-emerald-400/10 text-emerald-300':e.kind==='bad'?'bg-rose-400/10 text-rose-300':'bg-white/5 text-zinc-400'} mt-1.5">${e.tag}</div>
+      </div>
+      <p class="text-[11px] text-zinc-500 leading-snug">${e.desc}</p>
+    </div>`).join('');
+
+  const sheetField = (label)=>`
+    <div class="border-2 border-zinc-900/80 rounded-lg p-3">
+      <div class="text-[10px] uppercase tracking-[.14em] text-zinc-500 font-semibold">${label}</div>
+      <div class="border-b-2 border-dashed border-zinc-400 h-8 mt-2"></div>
+    </div>`;
+
+  el.innerHTML = `
+  <div class="max-w-[1150px] mx-auto space-y-5">
+
+    <div class="fade-up guide-section">
+      <div class="text-[10.5px] uppercase tracking-[.22em] text-amber-300/90 mb-1.5 flex items-center gap-2"><i data-lucide="book-open" class="w-3.5 h-3.5"></i>Event guide</div>
+      <h2 class="font-display text-[30px] lg:text-[38px] font-bold tracking-tight text-white leading-tight">How Startup Wars is played</h2>
+      <p class="text-[13px] text-zinc-500 mt-2 max-w-2xl">Every team runs a paper startup selling one product. Each round they set 4 numbers on a printed sheet. You — the manager — feed those sheets into this console, which simulates the shared market and scores everyone.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-3.5 guide-section fade-up" style="animation-delay:.04s">${concept}</div>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+      <div class="panel fade-up p-6 guide-section" style="animation-delay:.08s">
+        <h3 class="font-display font-semibold text-white text-[16px] mb-4 flex items-center gap-2"><i data-lucide="list-checks" class="w-4.5 h-4.5 text-amber-300"></i>Prepare before the event</h3>
+        <div class="space-y-3.5">${prep}</div>
+      </div>
+      <div class="panel fade-up p-6 guide-section" style="animation-delay:.12s">
+        <h3 class="font-display font-semibold text-white text-[16px] mb-4 flex items-center gap-2"><i data-lucide="timer" class="w-4.5 h-4.5 text-sky-300"></i>Anatomy of a round <span class="text-zinc-600 font-normal text-[12px]">· ~10 min</span></h3>
+        <div>${steps}</div>
+      </div>
+    </div>
+
+    <div class="panel fade-up p-6 guide-section" style="animation-delay:.16s">
+      <h3 class="font-display font-semibold text-white text-[16px] mb-1.5 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4.5 h-4.5 text-violet-300"></i>The four decisions every team makes</h3>
+      <p class="text-[12px] text-zinc-500 mb-4">These are the only four fields on the paper decision sheet. Everything else is computed.</p>
+      <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-3.5">${decisions}</div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+      <div class="panel fade-up p-6 guide-section" style="animation-delay:.2s">
+        <h3 class="font-display font-semibold text-white text-[16px] mb-4 flex items-center gap-2"><i data-lucide="calculator" class="w-4.5 h-4.5 text-emerald-300"></i>How the console scores a round</h3>
+        <div class="space-y-3.5">${formulas}</div>
+      </div>
+      <div class="panel fade-up p-6 guide-section" style="animation-delay:.24s">
+        <h3 class="font-display font-semibold text-white text-[16px] mb-1 flex items-center gap-2"><i data-lucide="presentation" class="w-4.5 h-4.5 text-sky-300"></i>Worked example <span class="text-zinc-600 font-normal text-[12px]">· 2 teams, 500-customer market</span></h3>
+        <p class="text-[11.5px] text-zinc-500 mb-3.5">Same price ($100), same production (250 units). Team B simply out-markets Team A.</p>
+        <table class="tbl">
+          <thead><tr><th></th><th>Team A</th><th>Team B</th></tr></thead>
+          <tbody>
+            <tr><td class="text-zinc-400">Price / units</td><td class="num">$100 / 250</td><td class="num">$100 / 250</td></tr>
+            <tr><td class="text-zinc-400">Marketing</td><td class="num">$3,000</td><td class="num">$6,000</td></tr>
+            <tr><td class="text-zinc-400">Customers drawn</td><td class="num">~203</td><td class="num">~297</td></tr>
+            <tr><td class="text-zinc-400">Units sold</td><td class="num">203</td><td class="num">250 <span class="text-amber-400 text-[10.5px]">(sold out)</span></td></tr>
+            <tr><td class="text-zinc-400">Revenue</td><td class="num">$20,300</td><td class="num">$25,000</td></tr>
+            <tr><td class="text-zinc-400">Total costs</td><td class="num">$16,000</td><td class="num">$19,000</td></tr>
+            <tr><td class="font-semibold text-zinc-200">Profit / loss</td><td class="num font-semibold text-emerald-400">+$4,300</td><td class="num font-semibold text-emerald-400">+$6,000</td></tr>
+          </tbody>
+        </table>
+        <p class="text-[11.5px] text-zinc-600 mt-3 leading-relaxed">Team A paid for 250 units but sold 203 — the rest were written off. Team B left ~47 customers unserved because it underproduced. These two tensions are the heart of the game.</p>
+      </div>
+    </div>
+
+    <div class="panel fade-up p-6 guide-section" style="animation-delay:.28s">
+      <h3 class="font-display font-semibold text-white text-[16px] mb-1.5 flex items-center gap-2"><i data-lucide="layers" class="w-4.5 h-4.5 text-amber-300"></i>The event deck</h3>
+      <p class="text-[12px] text-zinc-500 mb-4">Print these nine cards and draw one per round — or let Decision Entry draw for you.</p>
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">${deck}</div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-5">
+      <div class="panel fade-up p-6 guide-section" style="animation-delay:.32s">
+        <h3 class="font-display font-semibold text-white text-[16px] mb-3.5 flex items-center gap-2"><i data-lucide="crown" class="w-4.5 h-4.5 text-amber-300"></i>Winning & house rules</h3>
+        <div class="space-y-2.5 text-[12.5px] text-zinc-400 leading-relaxed">
+          <p><span class="text-amber-300 font-semibold">Winner:</span> most cash on hand after the final round. Cumulative profit breaks ties.</p>
+          <p><span class="text-zinc-200 font-semibold">Negative cash</span> means debt — teams may keep playing, or eliminate them as your house rule.</p>
+          <p><span class="text-zinc-200 font-semibold">Late or incomplete sheets:</span> skip the team that round, or re-enter its previous numbers — your call.</p>
+          <p><span class="text-zinc-200 font-semibold">Transparency:</span> read results aloud and post the printed leaderboard after every round. Drama is the point.</p>
+        </div>
+        <div class="mt-4 pt-4 border-t border-white/7">
+          <div class="text-[10.5px] uppercase tracking-[.16em] text-zinc-500 mb-2.5 flex items-center gap-1.5"><i data-lucide="lightbulb" class="w-3.5 h-3.5 text-amber-300"></i>Coaching tips to share with teams</div>
+          <div class="flex flex-wrap gap-2">
+            <span class="chip bg-white/5 text-zinc-300 border border-white/10">Price near the middle of the market</span>
+            <span class="chip bg-white/5 text-zinc-300 border border-white/10">Never produce more than you can sell</span>
+            <span class="chip bg-white/5 text-zinc-300 border border-white/10">Early R&D compounds every later round</span>
+            <span class="chip bg-white/5 text-zinc-300 border border-white/10">Re-read the event card before deciding</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel fade-up p-6 guide-section sheet-section" style="animation-delay:.36s">
+        <div class="flex items-center justify-between mb-4 no-print">
+          <h3 class="font-display font-semibold text-white text-[16px] flex items-center gap-2"><i data-lucide="scissors" class="w-4.5 h-4.5 text-emerald-300"></i>Printable decision sheet</h3>
+          <button class="btn-amber px-4 py-2 text-[12.5px] flex items-center gap-2" onclick="printSheet()"><i data-lucide="printer" class="w-4 h-4"></i>Print sheet</button>
+        </div>
+        <div id="decision-sheet" class="mx-auto max-w-[480px] bg-white text-zinc-900 rounded-xl shadow-2xl p-6 border-4 border-zinc-900/90">
+          <div class="flex items-start justify-between pb-3 border-b-4 border-zinc-900/90 mb-4">
+            <div>
+              <div class="text-[18px] font-black tracking-tight uppercase" style="font-family:'Space Grotesk',sans-serif">Startup Wars</div>
+              <div class="text-[10px] uppercase tracking-[.2em] text-zinc-500 font-semibold">Team decision sheet</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[9px] uppercase tracking-[.14em] text-zinc-500 font-semibold">Round</div>
+              <div class="border-2 border-zinc-900 rounded-lg w-14 h-10 mt-1"></div>
+            </div>
+          </div>
+          <div class="mb-4">
+            <div class="text-[9px] uppercase tracking-[.14em] text-zinc-500 font-semibold mb-1.5">Team name</div>
+            <div class="border-b-2 border-dashed border-zinc-400 h-8"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            ${sheetField('Price per unit ($)')}
+            ${sheetField('Units to produce')}
+            ${sheetField('Marketing spend ($)')}
+            ${sheetField('R&D spend ($)')}
+          </div>
+          <div class="flex justify-between items-end pt-3 border-t border-zinc-200">
+            <div class="text-[9.5px] text-zinc-500 leading-snug max-w-[62%]">Hand this sheet to the event manager before the clock ends. All four fields are mandatory. Decisions are final once collected.</div>
+            <div>
+              <div class="border-b-2 border-dashed border-zinc-400 w-28 h-7"></div>
+              <div class="text-[8.5px] uppercase tracking-[.12em] text-zinc-400 text-center mt-1">Manager signature</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  setActions('');
+}
+
+// ---------------- Boot ----------------
+state = load();
+if(!state){ seedSample(); }
+state.ui = state.ui || { view:'dashboard', selectedEvent:'stable' };
+render();
+</script>
+</body>
+</html>
